@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المحادثة الصوتية والمرئية</title>
+    <style>
+        body { font-family: Tahoma, sans-serif; background: #f9fbfd; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        .container { background: #fff; padding: 20px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; width: 90%; max-width: 400px; border: 1px solid #e1e4e8; }
+        h3 { color: #1a73e8; margin-bottom: 6px; font-size: 18px; }
+        p { color: #5f6368; font-size: 12px; margin-bottom: 15px; }
+        button { background: #1a73e8; color: white; border: none; padding: 10px 18px; font-size: 14px; border-radius: 25px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 8px; transition: 0.3s; box-shadow: 0 2px 5px rgba(26,115,232,0.3); }
+        button.stop { background: #d93025; box-shadow: 0 2px 5px rgba(217,48,37,0.3); }
+        video { width: 100%; max-height: 150px; background: #000; border-radius: 8px; margin-top: 10px; display: none; object-fit: cover; }
+        #status { margin-top: 10px; font-size: 12px; color: #202124; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3>🎙️ المحادثة الصوتية والمرئية</h3>
+        <p>تواصل مع المعلم مباشرة من داخل المنصة</p>
+        
+        <button id="audioBtn" onclick="toggleAudio()">تشغيل المايك 🎙️</button>
+        <button id="videoBtn" onclick="toggleVideo()" style="background: #0f9d58;">تشغيل الكاميرا 📹</button>
+        
+        <video id="webcam" autoplay playsinline muted></video>
+        <div id="status">الأجهزة في وضع الاستعداد</div>
+    </div>
+
+    <script>
+        let audioActive = false, videoActive = false;
+        let mediaRecorder, audioChunks = [];
+        let videoStream;
+
+        async function toggleAudio() {
+            const btn = document.getElementById('audioBtn');
+            const status = document.getElementById('status');
+            if (!audioActive) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.data && audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        const blob = new Blob(audioChunks, { type: 'audio/wav' });
+                        status.innerHTML = `✅ تم حفظ الصوت <br><audio controls src="${URL.createObjectURL(blob)}" style="margin-top:5px; width:100%;"></audio>`;
+                    };
+                    mediaRecorder.start();
+                    audioActive = true;
+                    btn.textContent = "إيقاف المايك ⏹️";
+                    btn.className = "stop";
+                    status.textContent = "جاري التسجيل الصوتي...";
+                } catch (e) {
+                    alert("عذراً، يجيب السماح للمتصفح بالوصول للمايك. تأكد من إعطاء الصلاحية في المتصفح.");
+                }
+            } else {
+                mediaRecorder.stop();
+                audioActive = false;
+                btn.textContent = "تشغيل المايك 🎙️";
+                btn.className = "";
+            }
+        }
+
+        async function toggleVideo() {
+            const btn = document.getElementById('videoBtn');
+            const video = document.getElementById('webcam');
+            const status = document.getElementById('status');
+            if (!videoActive) {
+                try {
+                    videoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    video.srcObject = videoStream;
+                    video.style.display = "block";
+                    videoActive = true;
+                    btn.textContent = "إيقاف الكاميرا ⏹️";
+                    btn.className = "stop";
+                    status.textContent = "الكاميرا والصوت يعملان الآن!";
+                } catch (e) {
+                    alert("عذراً، يرجى السماح للمتصفح بالوصول للكاميرا.");
+                }
+            } else {
+                videoStream.getTracks().forEach(track => track.stop());
+                video.style.display = "none";
+                videoActive = false;
+                btn.textContent = "تشغيل الكاميرا 📹";
+                btn.className = "";
+                status.textContent = "تم إيقاف الكاميرا.";
+            }
+        }
+    </script>
+</body>
+</html>
